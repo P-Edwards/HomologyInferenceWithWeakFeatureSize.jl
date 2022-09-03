@@ -24,7 +24,10 @@ This package primarily exposes two functions:
 
 	compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=1e-8)
 
-Where `F` is a list of polynomials. If you set `maximum_bottleneck_order` >= 2 then the function will stop at the indicated order. Otherwise the default is the number of variables for `F` + 1. This may become very expensive for order > 3. `threshold` is a numerical threshold to determine the value at which quantities are considered indistinguishable from 0. 
+Where 
+* `F` is a list of polynomials
+* For `maximum_bottleneck_order` >= 2 then the function will stop at the indicated order. Default is the number of variables for `F` + 1. This may become very expensive for order > 3. 
+* `threshold` is a numerical threshold to determine the value at which quantities are considered indistinguishable from 0.
 
 The output is a number, which is the best lower bound on the weak feature size computed using geometric bottlenecks up to the provided order. 
 
@@ -50,6 +53,9 @@ The output is a list with entry:
 * `output["diagrams"]` is a list of persistence diagrams in the format of [PersistenceDiagrams.jl](https://github.com/mtsch/PersistenceDiagrams.jl). The diagrams are in ascending order of degree. 
 
 
+Depedencies
+-----------
+This package uses both [sampling_varieties](https://github.com/olivergafvert/sampling_varieties) by Oliver Gafvert and [Ripserer.jl](https://mtsch.github.io/Ripserer.jl/dev/) by Matija Čufar. 
 
 License
 -------
