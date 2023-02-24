@@ -12,7 +12,9 @@ Edwards](https://sites.nd.edu/parker-edwards/)
 
 Installation
 -------------
-From Julia in package mode (press `]` to enter package mode, backspace to exit): `add https://github.com/P-Edwards/HomologyInferenceWithWeakFeatureSize.jl.git`
+For global installation from Julia in package mode (press `]` to enter package mode, backspace to exit): `add https://github.com/P-Edwards/HomologyInferenceWithWeakFeatureSize.jl.git`
+
+To install as a standalone local package: Clone this repository to a directory. Then, from Julia in package mode: `activate <path/to/cloned/copy/of/root/directory>` followed by `instantiate`. 
 
 
 Usage
