@@ -3,10 +3,10 @@ HomologyInferenceWithWeakFeatureSize.jl
 
 Version
 -------
-1.0.0
+1.1.0
 
 
-Copyright (C) 2022 [Parker
+Copyright (C) 2023 [Parker
 Edwards](https://sites.nd.edu/parker-edwards/)
 
 
@@ -19,7 +19,7 @@ To install as a standalone local package: Clone this repository to a directory. 
 
 Usage
 ------
-To use multiple cores, run `export JULIA_NUM_THREADS=<number_to_use>` before starting julia. Examples are available at [https://github.com/P-Edwards/wfs-and-reach-examples](https://github.com/P-Edwards/wfs-and-reach-examples).
+To use multiple cores, run `export JULIA_NUM_THREADS=<number_to_use>` before starting Julia. Examples are available at [https://github.com/P-Edwards/wfs-and-reach-examples](https://github.com/P-Edwards/wfs-and-reach-examples).
 
 
 This package primarily exposes two functions: 

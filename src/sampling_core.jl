@@ -5,91 +5,80 @@ using HomotopyContinuation, DynamicPolynomials, LinearAlgebra, IterTools, Ripser
 function sampling_fixed_density(F,epsilon)
     # F - system, n - ambient dimension, x - array of variables of F, epsilon - density
     x = variables(F)
-    n = length(x) 
+    n = length(x)
     @polyvar y[1:n] p[1:n] gamma[1:n]
     d=length(F) # codimension of variety
     k = n-d # dimension of variety
     @polyvar lambda[1:d] # lagrange multipliers
-    
+
     gradx = differentiate(F, x)
-    
+
     δ = epsilon/(2*sqrt(n)) # grid size
-    
-    
+
+
     # Compute the bounding box by computing the EDD starting from the center of the largest bottleneck
 
     q = [1 for _ in 1:n]
     system = [F; map(j -> x[j]-q[j]-dot(lambda, gradx[:, j]), 1:n)]
     result = solve(system, start_system = :polyhedral)
-    
-    
+
+
     # Extract farthest point from q to X and use as box length
 
     critical_points = sort!(map(c -> (norm(c[1:n]-q), c[1:n]), real_solutions(nonsingular(result))), by = a -> a[1])
     b = critical_points[end][1]
     indices = [i for i in -b:δ:b];
-    
-    
+
+
     # Compute basic sample
 
     samples = []
     counter = 0
 
-    start_time = time_ns()
     for s in IterTools.subsets(1:n, k)
-        Ft = [F; map(i -> x[s[i]]-p[i]-q[s[i]], 1:k)]
+        Ft = System([F; map(i -> x[s[i]]-p[i]-q[s[i]], 1:k)]; parameters=p[1:k])
         p₀ = randn(ComplexF64, k)
-        F_p₀ = subs(Ft, p[1:k] => p₀)
-        result_p₀ = solve(F_p₀)
+        result_p₀ = solve(Ft, target_parameters = p₀)
         S_p₀ = solutions(result_p₀)
 
-        # Construct the PathTracker
-        tracker = HomotopyContinuation.pathtracker(Ft; parameters=p[1:k], generic_parameters=p₀)
-        for p1 in Iterators.product(map(j-> 1:length(indices), s)...)
-            counter += length(S_p₀)
-            for s1 in S_p₀
-                result = track(tracker, s1; target_parameters=map(j -> indices[p1[j]], 1:k))
-                # check that the tracking was successfull
-                if is_success(result) && is_real(result)
-                    push!(samples, real(solution(result)))
-                end
-            end
-        end
+        slice_samples = solve(
+        Ft,
+        S_p₀;
+        start_parameters =  p₀,
+        target_parameters = [map(j -> indices[p1[j]], 1:k) for p1 in Iterators.product(map(j-> 1:length(indices), s)...)],
+        transform_result = (r,p) -> real_solutions(r),
+        flatten = true
+        )
+        samples = vcat(samples, slice_samples)
     end
-    
-    
+
+
     # Compute extra sample
 
     extra_samples = []
     extra_counter = 0
 
-    start_time = time_ns()
     for l in 1:k-1
         for s in IterTools.subsets(1:n, l)
-            Ft = [F; map(i -> x[s[i]]-p[i]-q[s[i]], 1:l)] 
-            gradx = differentiate(Ft, x)
-            system = [Ft; map(j -> x[j]-y[j]-dot(gamma[1:n-k+l], gradx[:, j]), 1:n)]
-
+            Ft = [F; map(i -> x[s[i]]-p[i]-q[s[i]], 1:l)]
+            grad = differentiate(Ft, x)
+            system = System([Ft; map(j -> x[j]-y[j]-dot(gamma[1:n-k+l], grad[:, j]), 1:n)]; parameters=[y; p[1:l]])
             p₀ = randn(ComplexF64, n+l)
-            F_p₀ = subs(system, [y; p[1:l]] => p₀)
-            result_p₀ = solve(F_p₀)
+            result_p₀ = solve(system, target_parameters = p₀)
             S_p₀ = solutions(result_p₀)
 
-            # Construct the PathTracker
-            tracker = HomotopyContinuation.pathtracker(system; parameters=[y; p[1:l]], generic_parameters=p₀)
-            for p1 in Iterators.product(map(j-> 1:length(indices), s)...)
-                extra_counter += length(S_p₀)
-                for s1 in S_p₀
-                    result = track(tracker, s1; target_parameters=[randn(Float64, n); map(j -> indices[p1[j]], 1:l)])
-                    # check that the tracking was successfull
-                    if is_success(result) && is_real(result)
-                        push!(extra_samples, real(solution(result))[1:n])
-                    end
-                end
-            end
+            slice_samples = solve(
+            system,
+            S_p₀;
+            start_parameters =  p₀,
+            target_parameters = [[randn(Float64, n); map(j -> indices[p1[j]], 1:l)] for p1 in Iterators.product(map(j-> 1:length(indices), s)...)],
+            transform_result = (r,p) -> real_solutions(r),
+            flatten = true
+            )
+            extra_samples = vcat(extra_samples, slice_samples)
         end
     end
-    
+
     return vcat(samples, extra_samples)
 end
 

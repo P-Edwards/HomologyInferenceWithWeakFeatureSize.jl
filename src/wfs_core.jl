@@ -40,7 +40,7 @@ function bottleneck_correspondence_equations(F,x,k)
     squared_distance_to_first_endpoint = [D - dot(y[1,:] - z,y[1,:] - z)]
     
     all_equations = [correspondence_original_functions;barycenter_equation;patch_equations;flattened_normals;distance_equations;squared_distance_to_first_endpoint]    
-    return(all_equations)
+    return(System(all_equations))
 end
 
 function minimum_distance_start_system(F,x)
@@ -57,7 +57,7 @@ function minimum_distance_start_system(F,x)
     patch_equation = [dot(rand(m+1)+im*rand(m+1),lambdas) - 1]
     normal_equations = vcat(unflattened_normal_equations...)
     distance_equation = [D - dot(p-x,p-x)]        
-    return [perturbed_equations;patch_equation;normal_equations;distance_equation],[p;epsilon]
+    return System([perturbed_equations;patch_equation;normal_equations;distance_equation],variables=[x;lambdas;D],parameters=[p;epsilon])
 end
 
 function check_if_vector_is_real(vec; threshold=1e-7)
@@ -119,7 +119,7 @@ function apply_distance_squared_to_solution(solution)
     return (difference_vector)' * (difference_vector)
 end
 
-function filter_solution_to_bottleneck(solution,number_of_variables,degree_of_bottlenecks,distance_system,start,params,initial_solution;singular=false,return_points=false,threshold=1e-7,reach=false)
+function filter_solution_to_bottleneck(solution,number_of_variables,degree_of_bottlenecks,distance_system,start,initial_solution;singular=false,return_points=false,threshold=1e-7,reach=false)
     
     # First series of checks is for real 
     # bottlenecks with positive, real barycentric coordinates
@@ -164,8 +164,8 @@ function filter_solution_to_bottleneck(solution,number_of_variables,degree_of_bo
         end 
     end
     combination = real(combination)    
-    zeroes_for_perturbation = [0.0 for i in 1:(length(params)-number_of_variables)]
-    distance_results = solve(distance_system, initial_solution; parameters=params, start_parameters=start,target_parameters=[combination;zeroes_for_perturbation],accuracy=1e-12,max_steps=2e4,precision=:double_double)
+    zeroes_for_perturbation = [0.0 for i in 1:(length(parameters(distance_system))-number_of_variables)]
+    distance_results = solve(distance_system,initial_solution;start_parameters=start,target_parameters=[combination;zeroes_for_perturbation],tracker_options=TrackerOptions(;parameters=:conservative))
     #distance_solutions = solutions(nonsingular(distance_results))
     distance_solutions = solutions(distance_results)
     distance_solutions = [[dist[1:number_of_variables];dist[end]] for dist in distance_solutions if abs(imag(dist[end])) <= threshold]    
@@ -229,8 +229,8 @@ function cassini_hypersurface(number_of_points,b,the_vars,rotation=false)
 end
 
 function find_points_on_bottleneck_correspondence(F,x,k)
-    equations_for_correspondence = bottleneck_correspondence_equations(F,x,k)
-    solved_bottlenecks = solve(equations_for_correspondence, start_system = :polyhedral,accuracy=1e-12,precision=:adaptive)
+    system_for_correspondence = bottleneck_correspondence_equations(F,x,k)
+    solved_bottlenecks = solve(system_for_correspondence, start_system = :polyhedral,tracker_options=TrackerOptions(;parameters=:conservative))
     nonsingular_solutions = solutions(nonsingular(solved_bottlenecks))
     singular_solutions = solutions(singular(solved_bottlenecks))
 
@@ -253,10 +253,10 @@ function compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=
     
     weak_feature_size = Inf
 
-    distance_system_for_filtering,parameters_for_filtering = minimum_distance_start_system(F,x)
+    distance_system_for_filtering = minimum_distance_start_system(F,x)
     start = randn(ComplexF64,length(x)+length(F))
-    initial_system = subs(distance_system_for_filtering,parameters_for_filtering => start)
-    initial_solution = solutions(solve(initial_system,start_system = :polyhedral,parameters=:conservative))
+    #initial_system = subs(distance_system_for_filtering,parameters_for_filtering => start)
+    initial_solution = solutions(solve(distance_system_for_filtering,target_parameters=start,start_system = :polyhedral,tracker_options=TrackerOptions(;parameters=:conservative)))
 
     for k in 2:maximum_bottleneck_order
         computed_points = find_points_on_bottleneck_correspondence(F,x,k)
@@ -272,7 +272,7 @@ function compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=
 
         distances_isolated = [Inf]
         if length(can_be_distance_filtered) > 0
-            distances_isolated = [filter_solution_to_bottleneck(solution,length(x),k,distance_system_for_filtering,start,parameters_for_filtering,initial_solution;threshold=threshold) for solution in can_be_distance_filtered]
+            distances_isolated = [filter_solution_to_bottleneck(solution,length(x),k,distance_system_for_filtering,start,initial_solution;threshold=threshold) for solution in can_be_distance_filtered]
             distances_isolated = [dist for dist in distances_isolated if dist!=false]
             if length(distances_isolated) == 0
                 distances_isolated = [Inf]
