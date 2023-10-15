@@ -3,7 +3,7 @@ HomologyInferenceWithWeakFeatureSize.jl
 
 Version
 -------
-1.1.0
+1.1.1
 
 
 Copyright (C) 2023 [Parker

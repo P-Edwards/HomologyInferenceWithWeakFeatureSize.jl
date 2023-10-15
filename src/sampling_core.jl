@@ -6,10 +6,10 @@ function sampling_fixed_density(F,epsilon)
     # F - system, n - ambient dimension, x - array of variables of F, epsilon - density
     x = variables(F)
     n = length(x)
-    @polyvar y[1:n] p[1:n] gamma[1:n]
+    @var y[1:n] p[1:n] gamma[1:n]
     d=length(F) # codimension of variety
     k = n-d # dimension of variety
-    @polyvar lambda[1:d] # lagrange multipliers
+    @var lambda[1:d] # lagrange multipliers
 
     gradx = differentiate(F, x)
 
