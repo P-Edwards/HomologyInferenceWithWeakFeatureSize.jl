@@ -1,7 +1,7 @@
 name = "HomologyInferenceWithWeakFeatureSize"
 uuid = "c51782a9-cb5d-4337-ba91-dcc67d2ae4c4"
 authors = ["Parker Edwards <edwardsp@fau.edu>"]
-version = "1.1.1"
+version = "1.1.2"
 
 [deps]
 DynamicPolynomials = "7c1d4256-1411-5781-91ec-d7bc3513ac07"

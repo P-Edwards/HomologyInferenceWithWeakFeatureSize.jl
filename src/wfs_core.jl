@@ -1,6 +1,24 @@
 using HomotopyContinuation, DynamicPolynomials, LinearAlgebra, IterTools
 
-function bottleneck_correspondence_equations(F,x,k)
+function total_degree_pattern(F,variables)
+    correspondence_polynomials = []
+    correspondence_parameters = []
+    target_parameters = []
+    patch_polynomials = []
+    for f in F 
+        current_dense_poly,current_dense_params = dense_poly(variables,degree(f))
+        current_target_parameters = coeffs_as_dense_poly(f,variables,degree(f))
+        random_patch_coefficients = rand(Complex{Float64},length(current_dense_params))
+        push!(patch_polynomials,dot(random_patch_coefficients,current_dense_params) - dot(random_patch_coefficients,current_target_parameters))
+        push!(target_parameters,current_target_parameters)
+        push!(correspondence_polynomials,current_dense_poly)
+        push!(correspondence_parameters,current_dense_params)               
+    end
+    return([ModelKit.Expression(poly) for poly in correspondence_polynomials],[ModelKit.Expression(poly) for poly in patch_polynomials],
+        vcat(correspondence_parameters...),vcat(target_parameters...))
+end
+
+function bottleneck_correspondence_equations(F,x,k;parameters=nothing,extra_equations=[])
     # F - system 
     # x - array of variables for F
     # k - the degree of the bottlenecks
@@ -39,8 +57,8 @@ function bottleneck_correspondence_equations(F,x,k)
     @var D
     squared_distance_to_first_endpoint = [D - dot(y[1,:] - z,y[1,:] - z)]
     
-    all_equations = [correspondence_original_functions;barycenter_equation;patch_equations;flattened_normals;distance_equations;squared_distance_to_first_endpoint]    
-    return(System(all_equations,variables=[y[:];t;lambdas[:];D]))
+    all_equations = [correspondence_original_functions;barycenter_equation;patch_equations;flattened_normals;distance_equations;squared_distance_to_first_endpoint;extra_equations]    
+    return(System(all_equations,variables=[y[:];t;lambdas[:];D],parameters=parameters))
 end
 
 function minimum_distance_start_system(F,x)
@@ -227,9 +245,17 @@ function cassini_hypersurface(number_of_points,b,the_vars,rotation=false)
     return final_equation
 end
 
-function find_points_on_bottleneck_correspondence(F,x,k)
-    system_for_correspondence = bottleneck_correspondence_equations(F,x,k)
-    solved_bottlenecks = solve(system_for_correspondence, start_system = :polyhedral,tracker_options=TrackerOptions(;parameters=:conservative))
+function find_points_on_bottleneck_correspondence(F,x,k;solve_with_monodromy=false)
+    if !solve_with_monodromy
+        system_for_correspondence = bottleneck_correspondence_equations(F,x,k)
+        solved_bottlenecks = solve(system_for_correspondence, start_system = :polyhedral,tracker_options=TrackerOptions(;parameters=:conservative))
+    else
+        polys,patches,parameters,target = total_degree_pattern(F,x)
+        system_for_correspondence = bottleneck_correspondence_equations(polys,x,k;parameters=parameters,extra_equations=patches)   
+        bottleneck_initial_solutions = monodromy_solve(system_for_correspondence) 
+        solved_bottlenecks = solve(system_for_correspondence,solutions(bottleneck_initial_solutions);start_parameters=bottleneck_initial_solutions.parameters,target_parameters=target,tracker_options=TrackerOptions(;parameters=:conservative))
+    end
+    
     nonsingular_solutions = solutions(nonsingular(solved_bottlenecks))
     singular_solutions = solutions(singular(solved_bottlenecks);only_nonsingular=false)
 
@@ -244,20 +270,20 @@ function real_and_positive_d_value_check(point;threshold=1e-7)
     return !(abs(imag(apply_distance_squared_to_solution(point))) > threshold) && real(apply_distance_squared_to_solution(point)) > threshold
 end
 
-function compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=1e-8)
-    x = variables(F) 
+function compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=1e-8,solve_with_monodromy=false,system_variables=variables(F))    
+    number_of_variables = length(system_variables)
     if maximum_bottleneck_order == nothing
-        maximum_bottleneck_order = length(x) + 1
+        maximum_bottleneck_order = number_of_variables + 1
     end
     
     weak_feature_size = Inf
 
-    distance_system_for_filtering = minimum_distance_start_system(F,x)
-    start = randn(ComplexF64,length(x)+length(F))    
+    distance_system_for_filtering = minimum_distance_start_system(F,system_variables)
+    start = randn(ComplexF64,number_of_variables+length(F))    
     initial_solution = solutions(solve(distance_system_for_filtering,target_parameters=start,start_system = :polyhedral,tracker_options=TrackerOptions(;parameters=:conservative)))
 
     for k in 2:maximum_bottleneck_order
-        computed_points = find_points_on_bottleneck_correspondence(F,x,k)
+        computed_points = find_points_on_bottleneck_correspondence(F,system_variables,k;solve_with_monodromy=solve_with_monodromy)
         singular_points = computed_points["singular"]
         nonsingular_points = computed_points["nonsingular"]
         filtered_nonsingular_points = [point for point in nonsingular_points if check_if_solution_has_real_endpoints(point;threshold=threshold)]
@@ -270,7 +296,7 @@ function compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=
 
         distances_isolated = [Inf]
         if length(can_be_distance_filtered) > 0
-            distances_isolated = [filter_solution_to_bottleneck(solution,length(x),k,distance_system_for_filtering,start,initial_solution;threshold=threshold) for solution in can_be_distance_filtered]
+            distances_isolated = [filter_solution_to_bottleneck(solution,number_of_variables,k,distance_system_for_filtering,start,initial_solution;threshold=threshold) for solution in can_be_distance_filtered]
             distances_isolated = [dist for dist in distances_isolated if dist!=false]
             if length(distances_isolated) == 0
                 distances_isolated = [Inf]

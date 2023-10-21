@@ -3,7 +3,7 @@ HomologyInferenceWithWeakFeatureSize.jl
 
 Version
 -------
-1.1.1
+1.1.2
 
 
 Copyright (C) 2023 [Parker
@@ -24,12 +24,14 @@ To use multiple cores, run `export JULIA_NUM_THREADS=<number_to_use>` before sta
 
 This package primarily exposes two functions: 
 
-	compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=1e-8)
+	compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=1e-8,solve_with_monodromy=false,system_variables=variables(F))
 
 Where 
 * `F` is a list of polynomials
 * For `maximum_bottleneck_order` >= 2 then the function will stop at the indicated order. Default is the number of variables for `F` + 1. This may become very expensive for order > 3. 
 * `threshold` is a numerical threshold to determine the value at which quantities are considered indistinguishable from 0.
+* `solve_with_monodromy` is a flag that toggles between a polyhedral homotopy solving method and a [monodromy based one](https://www.juliahomotopycontinuation.org/HomotopyContinuation.jl/stable/monodromy/). There are currently no correctness guarantees with the monodromy method, but it is faster and has worked experimentally.
+* `system_variables` is a vector of variables to use for the original system. Useful for requiring the use of variables that do not occur in the functions in `F`.
 
 The output is a number, which is the best lower bound on the weak feature size computed using geometric bottlenecks up to the provided order. 
 
