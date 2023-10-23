@@ -1,9 +1,10 @@
 name = "HomologyInferenceWithWeakFeatureSize"
 uuid = "c51782a9-cb5d-4337-ba91-dcc67d2ae4c4"
 authors = ["Parker Edwards <edwardsp@fau.edu>"]
-version = "1.1.2"
+version = "1.2.0"
 
 [deps]
+Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DynamicPolynomials = "7c1d4256-1411-5781-91ec-d7bc3513ac07"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"

@@ -3,7 +3,7 @@ HomologyInferenceWithWeakFeatureSize.jl
 
 Version
 -------
-1.1.2
+1.2.0
 
 
 Copyright (C) 2023 [Parker
@@ -17,14 +17,14 @@ For global installation from Julia in package mode (press `]` to enter package m
 To install as a standalone local package: Clone this repository to a directory. Then, from Julia in package mode: `activate <path/to/cloned/copy/of/root/directory>` followed by `instantiate`. 
 
 
-Usage
+Basic usage
 ------
 To use multiple cores, run `export JULIA_NUM_THREADS=<number_to_use>` before starting Julia. Examples are available at [https://github.com/P-Edwards/wfs-and-reach-examples](https://github.com/P-Edwards/wfs-and-reach-examples).
 
 
 This package primarily exposes two functions: 
 
-	compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=1e-8,solve_with_monodromy=false,system_variables=variables(F))
+	compute_weak_feature_size(F;maximum_bottleneck_order=nothing,threshold=1e-8,solve_with_monodromy=false,system_variables=variables(F),multi_system=false)
 
 Where 
 * `F` is a list of polynomials
@@ -32,8 +32,18 @@ Where
 * `threshold` is a numerical threshold to determine the value at which quantities are considered indistinguishable from 0.
 * `solve_with_monodromy` is a flag that toggles between a polyhedral homotopy solving method and a [monodromy based one](https://www.juliahomotopycontinuation.org/HomotopyContinuation.jl/stable/monodromy/). There are currently no correctness guarantees with the monodromy method, but it is faster and has worked experimentally.
 * `system_variables` is a vector of variables to use for the original system. Useful for requiring the use of variables that do not occur in the functions in `F`.
+* `multi_system` is a flag which switches between single system mode (the default), and multi-system mode (described below).
 
 The output is a number, which is the best lower bound on the weak feature size computed using geometric bottlenecks up to the provided order. 
+
+**Example**: Compute the weak feature size of an ellipsoid, which occurs at a 2-bottleneck.
+	
+	using HomologyInferenceWithWeakFeatureSize, HomotopyContinuation
+	@var x y z
+	F = [x^2 + y^2 + z^2/2 + x*z/7 - 1]
+	compute_weak_feature_size(F;maximum_bottleneck_order=2)
+
+Output: `0.9950352569779831`
 
 
 The second function is
@@ -56,6 +66,15 @@ The output is a list with entry:
 * `output["proportion_of_wfs"]` multiplying wfs by this entry gives the initial density of the sample that was computed, before subsampling
 * `output["diagrams"]` is a list of persistence diagrams in the format of [PersistenceDiagrams.jl](https://github.com/mtsch/PersistenceDiagrams.jl). The diagrams are in ascending order of degree. 
 
+
+Multi-system mode
+-----------------
+The package also supports weak feature size type computations between multiple varieties, which is useful for computing, e.g., the distacen between two varieties V(G) and V(H)
+
+	compute_weak_feature_size(array_of_systems;maximum_bottleneck_order=nothing,threshold=1e-8,solve_with_monodromy=false,system_variables=variables(F[1]),multi_system=true)
+
+Where 
+* `array_of_systems` is a vector with `maximum_bottleneck_order` elements that are lists of polynomials
 
 Depedencies
 -----------

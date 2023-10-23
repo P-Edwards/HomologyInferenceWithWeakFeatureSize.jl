@@ -18,7 +18,8 @@ export homology_inference
 export subsample_with_function
 
 include("wfs_core.jl")
+include("wfs_utilities.jl")
 include("sampling_core.jl")
-
+include("utilities_for_examples.jl")
 
 end # module
