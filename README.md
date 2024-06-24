@@ -6,8 +6,8 @@ Version
 1.2.0
 
 
-Copyright (C) 2023 [Parker
-Edwards](https://sites.nd.edu/parker-edwards/)
+Copyright (C) 2024 [Parker
+Edwards](https://parkeredw.com)
 
 
 Installation
@@ -28,7 +28,7 @@ This package primarily exposes two functions:
 
 Where 
 * `F` is a list of polynomials
-* For `maximum_bottleneck_order` >= 2 then the function will stop at the indicated order. Default is the number of variables for `F` + 1. This may become very expensive for order > 3. 
+* For `maximum_bottleneck_order` >= 2 the function will stop at the indicated order. Default is the number of variables for `F` + 1. This may become very expensive for order > 3. 
 * `threshold` is a numerical threshold to determine the value at which quantities are considered indistinguishable from 0.
 * `solve_with_monodromy` is a flag that toggles between a polyhedral homotopy solving method and a [monodromy based one](https://www.juliahomotopycontinuation.org/HomotopyContinuation.jl/stable/monodromy/). There are currently no correctness guarantees with the monodromy method, but it is faster and has worked experimentally.
 * `system_variables` is a vector of variables to use for the original system. Useful for requiring the use of variables that do not occur in the functions in `F`.
@@ -69,7 +69,7 @@ The output is a list with entry:
 
 Multi-system mode
 -----------------
-The package also supports weak feature size type computations between multiple varieties, which is useful for computing, e.g., the distacen between two varieties V(G) and V(H)
+The package also supports weak feature size type computations between multiple varieties, which is useful for computing, e.g., the distance between two varieties V(G) and V(H)
 
 	compute_weak_feature_size(array_of_systems;maximum_bottleneck_order=nothing,threshold=1e-8,solve_with_monodromy=false,system_variables=variables(F[1]),multi_system=true)
 
