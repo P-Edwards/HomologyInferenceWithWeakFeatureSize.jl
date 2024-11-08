@@ -63,6 +63,7 @@ function sampling_fixed_density(F,epsilon)
             Ft = [F; map(i -> x[s[i]]-p[i]-q[s[i]], 1:l)]
             grad = differentiate(Ft, x)
             system = System([Ft; map(j -> x[j]-y[j]-dot(gamma[1:n-k+l], grad[:, j]), 1:n)]; parameters=[y; p[1:l]])
+            original_variable_indices = [index for index in 1:length(variables(system)) if variables(system)[index] in x]
             p₀ = randn(ComplexF64, n+l)
             result_p₀ = solve(system, target_parameters = p₀)
             S_p₀ = solutions(result_p₀)
@@ -72,7 +73,7 @@ function sampling_fixed_density(F,epsilon)
             S_p₀;
             start_parameters =  p₀,
             target_parameters = [[randn(Float64, n); map(j -> indices[p1[j]], 1:l)] for p1 in Iterators.product(map(j-> 1:length(indices), s)...)],
-            transform_result = (r,p) -> real_solutions(r),
+            transform_result = (r,p) -> [solution[original_variable_indices] for solution in real_solutions(r)],
             flatten = true
             )
             extra_samples = vcat(extra_samples, slice_samples)
